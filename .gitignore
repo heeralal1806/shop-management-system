@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Local environment
+.env
+.env.local
+
+# Generated files
+*.log
+npm-debug.log*
+
+# Temporary files
+tmp/
+temp/
+
+# Project specific
+gh.tar.gz
+

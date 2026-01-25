@@ -1,0 +1,37 @@
+{
+  "name": "shop-management-system",
+  "version": "1.0.0",
+  "description": "Offline Shop Management System - Installable Desktop App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.shopmanager.app",
+    "productName": "Shop Management System",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icons/icon-512.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icons/icon-512.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "icons/icon-512.png"
+    }
+  },
+  "keywords": ["shop", "management", "inventory", "offline"],
+  "author": "Shop Manager",
+  "license": "MIT"
+}
+

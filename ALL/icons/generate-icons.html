@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Generator - Shop Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 600px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .icon-preview {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .icon-preview canvas {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn-primary {
+            background: #2c3e50;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1a252f;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #2980b9;
+        }
+        
+        .instructions {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: left;
+            margin-top: 20px;
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            color: #666;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 8px 0;
+        }
+        
+        code {
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏪 Shop Manager</h1>
+        <p>Icon Generator for PWA Icons</p>
+        
+        <div class="icon-preview" id="preview"></div>
+        
+        <button class="btn btn-primary" onclick="downloadAllIcons()">📥 Download All Icons</button>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <ol>
+                <li>Click "Download All Icons" to generate PNG files</li>
+                <li>Save all downloaded files to the <code>icons/</code> folder</li>
+                <li>Make sure all sizes are saved (72, 96, 128, 144, 152, 192, 384, 512)</li>
+                <li>Refresh your browser to see the PWA install prompt</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        const sizes = [
+            { size: 72, name: 'icon-72.png' },
+            { size: 96, name: 'icon-96.png' },
+            { size: 128, name: 'icon-128.png' },
+            { size: 144, name: 'icon-144.png' },
+            { size: 152, name: 'icon-152.png' },
+            { size: 192, name: 'icon-192.png' },
+            { size: 384, name: 'icon-384.png' },
+            { size: 512, name: 'icon-512.png' }
+        ];
+        
+        function generateIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Background with rounded corners effect
+            const radius = size * 0.125;
+            ctx.fillStyle = '#2c3e50';
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, radius);
+            ctx.fill();
+            
+            // Store emoji
+            const emojiSize = size * 0.5;
+            ctx.font = `${emojiSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🏪', size / 2, size / 2);
+            
+            return canvas;
+        }
+        
+        function init() {
+            const preview = document.getElementById('preview');
+            
+            // Generate and display preview icons
+            sizes.forEach(({ size, name }) => {
+                const canvas = generateIcon(size);
+                canvas.title = name;
+                preview.appendChild(canvas);
+            });
+        }
+        
+        function downloadAllIcons() {
+            sizes.forEach(({ size, name }) => {
+                const canvas = generateIcon(size);
+                
+                // Convert to blob and download
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
+            });
+        }
+        
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
+
