@@ -276,14 +276,22 @@ function setupForms() {
         const description = document.getElementById('item-description').value;
         
         try {
-            await window.dbManager.addItemProduct(name, category, price, quantity, unit, description);
+            await window.dbManager.addItemProduct({
+                name: name,
+                category: category,
+                price: price,
+                quantity: quantity,
+                unit: unit,
+                description: description
+            });
             showToast('Item added successfully!', 'success');
             e.target.reset();
             // Reset unit to default
             document.getElementById('item-unit').value = 'pieces';
             loadDashboard();
         } catch (error) {
-            showToast('Error adding item', 'error');
+            console.error('Error adding item:', error);
+            showToast('Error adding item: ' + error.message, 'error');
         }
     });
     
