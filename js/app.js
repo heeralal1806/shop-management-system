@@ -953,25 +953,43 @@ async function completeSale() {
         // Generate a single transaction ID for all items in this bill
         const transactionId = window.dbManager.generateTransactionId();
         
+        console.log('=== COMPLETE SALE DEBUG ===');
+        console.log('Transaction ID:', transactionId);
+        console.log('Current Bill Items:', currentBill);
+        console.log('Customer:', currentCustomer);
+        console.log('Date:', today);
+        
         for (const item of currentBill) {
+            console.log(`Recording sale for item: ${item.name}, Qty: ${item.quantity}, Total: ${item.total}`);
+            
             // Record sale with unit, customer info, and transaction ID
-            await window.dbManager.recordSale({
-                itemId: item.itemId,
-                itemName: item.name,
-                quantitySold: item.quantity,
-                pricePerUnit: item.price,
-                totalPrice: item.total,
-                unit: item.unit,
-                customerName: currentCustomer.name,
-                customerPhone: currentCustomer.phone,
-                date: today,
-                transactionId: transactionId
-            });
-
+            try {
+                await window.dbManager.recordSale({
+                    itemId: item.itemId,
+                    itemName: item.name,
+                    quantitySold: item.quantity,
+                    pricePerUnit: item.price,
+                    totalPrice: item.total,
+                    unit: item.unit,
+                    customerName: currentCustomer.name,
+                    customerPhone: currentCustomer.phone,
+                    date: today,
+                    transactionId: transactionId
+                });
+                console.log('Sale recorded successfully for:', item.name);
+            } catch (saleError) {
+                console.error('Error recording sale for', item.name, ':', saleError);
+            }
+            
             // Update stock
-            const originalItem = await window.dbManager.getItemByIdProduct(item.itemId);
-            const newQuantity = originalItem.quantity - item.quantity;
-            await window.dbManager.updateItemQuantity(item.itemId, newQuantity);
+            try {
+                const originalItem = await window.dbManager.getItemByIdProduct(item.itemId);
+                const newQuantity = originalItem.quantity - item.quantity;
+                await window.dbManager.updateItemQuantity(item.itemId, newQuantity);
+                console.log('Stock updated for', item.name, ':', originalItem.quantity, '->', newQuantity);
+            } catch (stockError) {
+                console.error('Error updating stock for', item.name, ':', stockError);
+            }
         }
         
         // Check if we have a saved bill to restore
