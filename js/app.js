@@ -943,7 +943,14 @@ function shareViaSMS() {
 
 async function completeSale() {
     if (currentBill.length === 0) {
-        showToast('Bill is empty', 'warning');
+        showToast('Bill is empty - add items first!', 'warning');
+        return;
+    }
+    
+    // Check if dbManager is available
+    if (!window.dbManager) {
+        console.error('ERROR: dbManager is not defined!');
+        showToast('Error: Database not initialized!', 'error');
         return;
     }
     
@@ -959,10 +966,15 @@ async function completeSale() {
         console.log('Customer:', currentCustomer);
         console.log('Date:', today);
         
+        let saleCount = 0;
         for (const item of currentBill) {
+            if (!item.itemId) {
+                console.error('ERROR: Item has no itemId:', item);
+                continue;
+            }
+            
             console.log(`Recording sale for item: ${item.name}, Qty: ${item.quantity}, Total: ${item.total}`);
             
-            // Record sale with unit, customer info, and transaction ID
             try {
                 await window.dbManager.recordSale({
                     itemId: item.itemId,
@@ -976,20 +988,33 @@ async function completeSale() {
                     date: today,
                     transactionId: transactionId
                 });
-                console.log('Sale recorded successfully for:', item.name);
+                console.log('✅ Sale recorded successfully for:', item.name);
+                saleCount++;
             } catch (saleError) {
-                console.error('Error recording sale for', item.name, ':', saleError);
+                console.error('❌ Error recording sale for', item.name, ':', saleError);
             }
             
-            // Update stock
             try {
                 const originalItem = await window.dbManager.getItemByIdProduct(item.itemId);
-                const newQuantity = originalItem.quantity - item.quantity;
-                await window.dbManager.updateItemQuantity(item.itemId, newQuantity);
-                console.log('Stock updated for', item.name, ':', originalItem.quantity, '->', newQuantity);
+                if (originalItem) {
+                    const newQuantity = originalItem.quantity - item.quantity;
+                    await window.dbManager.updateItemQuantity(item.itemId, newQuantity);
+                    console.log('✅ Stock updated for', item.name, ':', originalItem.quantity, '->', newQuantity);
+                } else {
+                    console.error('❌ Item not found in database:', item.itemId);
+                }
             } catch (stockError) {
-                console.error('Error updating stock for', item.name, ':', stockError);
+                console.error('❌ Error updating stock for', item.name, ':', stockError);
             }
+        }
+        
+        console.log('=== SALE SUMMARY ===');
+        console.log('Total items in bill:', currentBill.length);
+        console.log('Sales recorded:', saleCount);
+        
+        if (saleCount === 0) {
+            showToast('Error: No sales were recorded! Check console for errors.', 'error');
+            return;
         }
         
         // Check if we have a saved bill to restore
@@ -1885,63 +1910,6 @@ function shareBillFromComplete(method) {
 /**
  * Enhanced completeSale function with bill link generation
  */
-async function completeSale() {
-    if (currentBill.length === 0) {
-        showToast('Bill is empty', 'warning');
-        return;
-    }
-    
-    const today = new Date().toISOString().split('T')[0];
-    
-    try {
-        // Generate a single transaction ID for all items in this bill
-        const transactionId = window.dbManager.generateTransactionId();
-        
-        for (const item of currentBill) {
-            // Record sale with unit, customer info, and transaction ID
-            await window.dbManager.recordSale(
-                item.itemId,
-                item.name,
-                item.quantity,
-                item.total,
-                item.unit,
-                currentCustomer.name,
-                currentCustomer.phone,
-                today,
-                transactionId
-            );
-            
-            // Update stock
-            const originalItem = await window.dbManager.getItemByIdProduct(item.itemId);
-            const newQuantity = originalItem.quantity - item.quantity;
-            await window.dbManager.updateItemQuantity(item.itemId, newQuantity);
-        }
-        
-        // Generate bill link before clearing
-        const billLink = generateBillLink();
-        
-        // Check if we have a saved bill to restore
-        if (savedBill && savedBill.length > 0) {
-            currentBill = JSON.parse(JSON.stringify(savedBill));
-            savedBill = null;
-            savedCustomer = null;
-            updateBillDisplay();
-            showSaleCompleteModal(billLink);
-        } else {
-            // Store link for showing in modal
-            window.lastBillLink = billLink;
-            clearBill();
-            showSaleCompleteModal(billLink);
-        }
-        
-        loadDashboard();
-        loadSalesItems();
-        
-    } catch (error) {
-        console.error('Error completing sale:', error);
-        showToast('Error completing sale', 'error');
-    }
-}
 
 // Make functions globally available
 window.navigateTo = navigateTo;
