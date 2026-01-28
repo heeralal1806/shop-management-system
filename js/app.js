@@ -955,18 +955,19 @@ async function completeSale() {
         
         for (const item of currentBill) {
             // Record sale with unit, customer info, and transaction ID
-            await window.dbManager.recordSale(
-                item.itemId,
-                item.name,
-                item.quantity,
-                item.total,
-                item.unit,
-                currentCustomer.name,
-                currentCustomer.phone,
-                today,
-                transactionId
-            );
-            
+            await window.dbManager.recordSale({
+                itemId: item.itemId,
+                itemName: item.name,
+                quantitySold: item.quantity,
+                pricePerUnit: item.price,
+                totalPrice: item.total,
+                unit: item.unit,
+                customerName: currentCustomer.name,
+                customerPhone: currentCustomer.phone,
+                date: today,
+                transactionId: transactionId
+            });
+
             // Update stock
             const originalItem = await window.dbManager.getItemByIdProduct(item.itemId);
             const newQuantity = originalItem.quantity - item.quantity;
