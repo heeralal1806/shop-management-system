@@ -268,6 +268,8 @@ function setupForms() {
     document.getElementById('add-item-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        console.log('Add Item form submitted!');
+        
         const name = document.getElementById('item-name').value;
         const category = document.getElementById('item-category').value;
         const unit = document.getElementById('item-unit').value;
@@ -275,7 +277,12 @@ function setupForms() {
         const quantity = document.getElementById('item-quantity').value;
         const description = document.getElementById('item-description').value;
         
+        console.log('Form values:', { name, category, unit, price, quantity, description });
+        console.log('dbManager available:', !!window.dbManager);
+        console.log('dbManager.addItemProduct available:', typeof window.dbManager?.addItemProduct === 'function');
+        
         try {
+            console.log('Calling dbManager.addItemProduct...');
             await window.dbManager.addItemProduct({
                 name: name,
                 category: category,
@@ -284,6 +291,7 @@ function setupForms() {
                 unit: unit,
                 description: description
             });
+            console.log('Item added successfully!');
             showToast('Item added successfully!', 'success');
             e.target.reset();
             // Reset unit to default
@@ -291,6 +299,8 @@ function setupForms() {
             loadDashboard();
         } catch (error) {
             console.error('Error adding item:', error);
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
             showToast('Error adding item: ' + error.message, 'error');
         }
     });
