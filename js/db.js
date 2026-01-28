@@ -794,11 +794,20 @@ async function importData(data, clearExisting = false) {
 
 async function initializeDatabase() {
     try {
-        await initDB();
+        console.log('Starting database initialization...');
+        const database = await initDB();
+        console.log('Database object received:', !!database);
+        
+        // Check if db global variable is set
+        console.log('Global db variable set:', !!db);
         
         // Add default categories if none exist
+        console.log('Checking for existing categories...');
         const categories = await getAllCategories();
+        console.log('Existing categories count:', categories.length);
+        
         if (categories.length === 0) {
+            console.log('Adding default categories...');
             const defaultCategories = [
                 'Grocery',
                 'Vegetables',
@@ -836,9 +845,12 @@ async function initializeDatabase() {
             ]);
         }
         
+        console.log('Database initialization completed successfully');
         return true;
     } catch (error) {
         console.error('Database initialization failed:', error);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
         return false;
     }
 }
