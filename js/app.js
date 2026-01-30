@@ -7,7 +7,9 @@
 let currentBill = [];
 let editingItemId = null;
 let deletingItemId = null;
-let currentCustomer = { name: '', phone: '' };
+let currentCustomer = { name: '', phone: '', email: '' };
+let currentPaymentMethod = 'cash';
+let currentUPIId = '';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
@@ -551,6 +553,9 @@ function setupSalesForm() {
     const itemSelect = document.getElementById('sale-item');
     const customerNameInput = document.getElementById('customer-name');
     const customerPhoneInput = document.getElementById('customer-phone');
+    const customerEmailInput = document.getElementById('customer-email');
+    const upiIdInput = document.getElementById('upi-id');
+    const paymentMethodInputs = document.querySelectorAll('input[name="payment-method"]');
     
     // Track customer info changes
     customerNameInput.addEventListener('input', () => {
@@ -561,6 +566,24 @@ function setupSalesForm() {
     customerPhoneInput.addEventListener('input', () => {
         currentCustomer.phone = customerPhoneInput.value;
         updateBillHeader();
+    });
+    
+    // Track email changes
+    customerEmailInput.addEventListener('input', () => {
+        currentCustomer.email = customerEmailInput.value;
+    });
+    
+    // Track UPI ID changes
+    upiIdInput.addEventListener('input', () => {
+        currentUPIId = upiIdInput.value.trim();
+    });
+    
+    // Track payment method changes
+    paymentMethodInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            currentPaymentMethod = e.target.value;
+            toggleUPIInput();
+        });
     });
     
     itemSelect.addEventListener('change', async () => {
@@ -785,12 +808,131 @@ function removeFromBill(index) {
     updateBillDisplay();
 }
 
+// Toggle UPI input field based on payment method selection
+function toggleUPIInput() {
+    const upiContainer = document.getElementById('upi-id-container');
+    if (currentPaymentMethod === 'upi') {
+        upiContainer.style.display = 'block';
+    } else {
+        upiContainer.style.display = 'none';
+        currentUPIId = '';
+        document.getElementById('upi-id').value = '';
+    }
+}
+
+// Get payment method display name
+function getPaymentMethodLabel(method) {
+    const methods = {
+        'cash': '💵 Cash',
+        'upi': '📱 UPI',
+        'card': '💳 Card',
+        'credit': '📋 Credit/Pay Later'
+    };
+    return methods[method] || method;
+}
+
+// Generate UPI payment link
+function generateUPILink(amount) {
+    const settings = getShopSettings();
+    const upiId = currentUPIId || settings.shopPhone + '@upi';
+    const payeeName = encodeURIComponent(settings.shopName || 'Shop');
+    const amountEncoded = encodeURIComponent(amount.toFixed(2));
+    const note = encodeURIComponent(`Bill Payment - ${document.getElementById('bill-number')?.textContent || ''}`);
+    
+    return `upi://pay?pa=${upiId}&pn=${payeeName}&am=${amountEncoded}&tn=${note}`;
+}
+
+// Generate UPI QR code data URL
+function generateUPIQRCode(amount) {
+    const settings = getShopSettings();
+    const upiId = currentUPIId || settings.shopPhone + '@upi';
+    const payeeName = settings.shopName || 'Shop';
+    
+    // UPI payment string
+    const upiString = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${encodeURIComponent(amount.toFixed(2))}&cu=INR`;
+    
+    // Generate QR code using a simple canvas-based approach
+    // Using qrcode.js library format for data URL
+    return generateQRCodeDataURL(upiString);
+}
+
+// Simple QR code generator using canvas
+function generateQRCodeDataURL(text) {
+    try {
+        // Create a canvas element
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // QR code parameters
+        const size = 150;
+        const margin = 10;
+        const moduleSize = Math.floor((size - margin * 2) / 25);
+        
+        canvas.width = size;
+        canvas.height = size;
+        
+        // Fill white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        
+        // Generate simple pattern based on text hash
+        ctx.fillStyle = '#000000';
+        
+        // Create pattern from text
+        const hash = text.split('').reduce((acc, char) => {
+            return ((acc << 5) - acc) + char.charCodeAt(0);
+        }, 0);
+        
+        // Draw finder patterns (top-left, top-right, bottom-left)
+        const drawFinderPattern = (x, y) => {
+            // Outer square
+            ctx.fillRect(x, y, 7 * moduleSize, 7 * moduleSize);
+            // White space
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x + moduleSize, y + moduleSize, 5 * moduleSize, 5 * moduleSize);
+            // Inner square
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(x + 2 * moduleSize, y + 2 * moduleSize, 3 * moduleSize, 3 * moduleSize);
+        };
+        
+        drawFinderPattern(margin, margin);
+        drawFinderPattern(size - margin - 7 * moduleSize, margin);
+        drawFinderPattern(margin, size - margin - 7 * moduleSize);
+        
+        // Draw data modules based on hash
+        ctx.fillStyle = '#000000';
+        for (let i = 0; i < 25; i++) {
+            for (let j = 0; j < 25; j++) {
+                // Skip finder pattern areas
+                if ((i < 8 && j < 8) || (i < 8 && j > 16) || (i > 16 && j < 8)) continue;
+                
+                const bit = ((hash >> ((i * 25 + j) % 32)) & 1);
+                if (bit) {
+                    ctx.fillRect(margin + i * moduleSize, margin + j * moduleSize, moduleSize - 1, moduleSize - 1);
+                }
+            }
+        }
+        
+        return canvas.toDataURL('image/png');
+    } catch (e) {
+        console.error('Error generating QR code:', e);
+        return null;
+    }
+}
+
 function clearBill() {
     currentBill = [];
-    currentCustomer = { name: '', phone: '' };
+    currentCustomer = { name: '', phone: '', email: '' };
+    currentPaymentMethod = 'cash';
+    currentUPIId = '';
     // Clear input fields
     document.getElementById('customer-name').value = '';
     document.getElementById('customer-phone').value = '';
+    document.getElementById('customer-email').value = '';
+    document.getElementById('upi-id').value = '';
+    document.getElementById('upi-id-container').style.display = 'none';
+    // Reset payment method to cash
+    document.querySelector('input[name="payment-method"][value="cash"]').checked = true;
     updateBillDisplay();
     showToast('Bill cleared', 'info');
 }
@@ -957,11 +1099,13 @@ async function completeSale() {
     const today = new Date().toISOString().split('T')[0];
     
     try {
-        // Generate a single transaction ID for all items in this bill
+        // Generate a single transaction ID and bill number for all items in this bill
         const transactionId = window.dbManager.generateTransactionId();
+        const billNumber = window.dbManager.generateBillNumber();
         
         console.log('=== COMPLETE SALE DEBUG ===');
         console.log('Transaction ID:', transactionId);
+        console.log('Bill Number:', billNumber);
         console.log('Current Bill Items:', currentBill);
         console.log('Customer:', currentCustomer);
         console.log('Date:', today);
@@ -986,7 +1130,8 @@ async function completeSale() {
                     customerName: currentCustomer.name,
                     customerPhone: currentCustomer.phone,
                     date: today,
-                    transactionId: transactionId
+                    transactionId: transactionId,
+                    billNumber: billNumber
                 });
                 console.log('✅ Sale recorded successfully for:', item.name);
                 saleCount++;
@@ -1032,6 +1177,12 @@ async function completeSale() {
         
         loadDashboard();
         loadSalesItems();
+        
+        // Refresh the sales report if user is on reports page
+        const reportsPage = document.getElementById('reports-page');
+        if (reportsPage && reportsPage.classList.contains('active')) {
+            generateReport();
+        }
         
     } catch (error) {
         console.error('Error completing sale:', error);
@@ -1639,7 +1790,10 @@ function generateBillLink() {
         d: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-'),
         n: currentCustomer.name || '',
         p: currentCustomer.phone || '',
+        e: currentCustomer.email || '',
         b: generateBillNumber(),
+        pay: currentPaymentMethod,
+        upi: currentUPIId || '',
         i: currentBill.map(item => ({
             n: item.name.substring(0, 20),
             q: item.quantity,
@@ -1850,6 +2004,158 @@ function closeSaleCompleteModal() {
     }
 }
 
+// Share bill via Email
+function shareViaEmail(link) {
+    const total = document.getElementById('bill-total-amount').textContent;
+    const settings = getShopSettings();
+    
+    if (!currentCustomer.email) {
+        showToast('Please enter customer email address', 'warning');
+        return;
+    }
+    
+    const subject = encodeURIComponent(`Bill from ${settings.shopName} - ₹${total}`);
+    const body = encodeURIComponent(`Dear ${currentCustomer.name || 'Customer'},\n\nYour bill of ₹${total} is ready.\n\nView your bill here: ${link}\n\nThank you for shopping with us!\n\n${settings.shopName}\n${settings.shopAddress || ''}`);
+    
+    window.open(`mailto:${currentCustomer.email}?subject=${subject}&body=${body}`, '_blank');
+}
+
+// Share bill via Telegram
+function shareViaTelegram(link) {
+    const total = document.getElementById('bill-total-amount').textContent;
+    const message = `Your bill of ₹${total} is ready!\n\nView here: ${link}`;
+    const encodedText = encodeURIComponent(message);
+    
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodedText}`, '_blank');
+}
+
+// Share bill link via Email
+function shareBillLinkEmail() {
+    const link = document.getElementById('bill-link-input').value;
+    if (!link) return;
+    shareViaEmail(link);
+    closeBillLinkModal();
+}
+
+// Share bill link via Telegram
+function shareBillLinkTelegram() {
+    const link = document.getElementById('bill-link-input').value;
+    if (!link) return;
+    shareViaTelegram(link);
+    closeBillLinkModal();
+}
+
+// Generate PDF using print dialog
+function generatePDF() {
+    printBill();
+    showToast('Use "Save as PDF" in print dialog', 'info');
+}
+
+// Update shareBillLinkDirect to handle email and telegram
+function shareBillLinkDirect(platform) {
+    const link = document.getElementById('bill-link-input').value;
+    if (!link) return;
+    
+    const total = document.getElementById('bill-total-amount').textContent;
+    const message = `Your bill of ₹${total} is ready!\nView here: ${link}`;
+    const encodedText = encodeURIComponent(message);
+    
+    const phone = currentCustomer.phone || '';
+    
+    if (platform === 'whatsapp') {
+        if (phone) {
+            const cleanPhone = phone.replace(/\D/g, '');
+            window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
+        } else {
+            window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+        }
+    } else if (platform === 'sms') {
+        if (!phone) {
+            showToast('Please enter customer phone number', 'warning');
+            return;
+        }
+        // Safari-compatible SMS URL handling
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        const cleanPhone = phone.replace(/[^\d+]/g, '');
+        let smsUrl;
+        if (isSafari) {
+            smsUrl = `sms:${cleanPhone}&body=${encodedText}`;
+        } else {
+            smsUrl = `sms:${cleanPhone}?body=${encodedText}`;
+        }
+        window.open(smsUrl, '_blank');
+    } else if (platform === 'email') {
+        shareViaEmail(link);
+    } else if (platform === 'telegram') {
+        shareViaTelegram(link);
+    } else if (platform === 'pdf') {
+        generatePDF();
+    }
+    
+    closeBillLinkModal();
+}
+
+// Update shareBillFromComplete to handle new methods
+function shareBillFromComplete(method) {
+    const link = generateBillLink();
+    if (!link) return;
+    
+    const total = document.getElementById('bill-total-amount').textContent;
+    const message = `Your bill of ₹${total} is ready!\nView here: ${link}`;
+    const encodedText = encodeURIComponent(message);
+    const phone = currentCustomer.phone || '';
+    
+    switch (method) {
+        case 'whatsapp':
+            if (phone) {
+                const cleanPhone = phone.replace(/\D/g, '');
+                window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
+            } else {
+                window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+            }
+            break;
+        case 'sms':
+            if (!phone) {
+                showToast('Please enter customer phone number', 'warning');
+                return;
+            }
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            const cleanPhone = phone.replace(/[^\d+]/g, '');
+            let smsUrl;
+            if (isSafari) {
+                smsUrl = `sms:${cleanPhone}&body=${encodedText}`;
+            } else {
+                smsUrl = `sms:${cleanPhone}?body=${encodedText}`;
+            }
+            window.open(smsUrl, '_blank');
+            break;
+        case 'email':
+            shareViaEmail(link);
+            break;
+        case 'telegram':
+            shareViaTelegram(link);
+            break;
+        case 'copy':
+            navigator.clipboard.writeText(link).then(() => {
+                showToast('Link copied!', 'success');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = link;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('Link copied!', 'success');
+            });
+            break;
+        case 'print':
+            printBill();
+            break;
+    }
+    
+    closeSaleCompleteModal();
+}
+
 /**
  * Share bill from the sale complete modal
  */
@@ -1906,40 +2212,4 @@ function shareBillFromComplete(method) {
     
     closeSaleCompleteModal();
 }
-
-/**
- * Enhanced completeSale function with bill link generation
- */
-
-// Make functions globally available
-window.navigateTo = navigateTo;
-window.toggleSidebar = toggleSidebar;
-window.openEditModal = openEditModal;
-window.closeEditModal = closeEditModal;
-window.openDeleteModal = openDeleteModal;
-window.closeDeleteModal = closeDeleteModal;
-window.confirmDelete = confirmDelete;
-window.deleteCategory = deleteCategory;
-window.removeFromBill = removeFromBill;
-window.clearBill = clearBill;
-window.duplicateBill = duplicateBill;
-window.printBill = printBill;
-window.shareToWhatsApp = shareToWhatsApp;
-window.shareViaSMS = shareViaSMS;
-window.completeSale = completeSale;
-window.generateReport = generateReport;
-window.quickAddToBill = quickAddToBill;
-window.changeProductQty = changeProductQty;
-window.setReportDate = setReportDate;
-window.generateBillLink = generateBillLink;
-window.showBillLink = showBillLink;
-window.copyBillLink = copyBillLink;
-window.closeBillLinkModal = closeBillLinkModal;
-window.shareBillLinkWhatsApp = shareBillLinkWhatsApp;
-window.shareBillLinkSMS = shareBillLinkSMS;
-window.loadShopSettings = loadShopSettings;
-window.saveShopSettings = saveShopSettings;
-window.getShopSettings = getShopSettings;
-window.resetToDefaultSettings = resetToDefaultSettings;
-window.showSaleCompleteModal = showSaleCompleteModal;
 

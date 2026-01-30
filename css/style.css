@@ -1101,3 +1101,81 @@ body {
     background: var(--primary-color);
 }
 
+/* Payment Method Styles */
+.payment-methods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.payment-option {
+    flex: 1;
+    min-width: 100px;
+    cursor: pointer;
+}
+
+.payment-option input[type="radio"] {
+    display: none;
+}
+
+.payment-label {
+    display: block;
+    padding: 10px 15px;
+    background: var(--light-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.payment-option input[type="radio"]:checked + .payment-label {
+    background: #e3f2fd;
+    border-color: #2196F3;
+    color: #1976D2;
+    font-weight: 600;
+}
+
+.payment-label:hover {
+    border-color: #2196F3;
+    background: #e3f2fd;
+}
+
+/* UPI ID Container */
+#upi-id-container {
+    background: var(--light-bg);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Email Button */
+.btn-email {
+    background: #EA4335;
+    color: white;
+}
+
+.btn-email:hover {
+    background: #D93025;
+}
+
+.btn-telegram {
+    background: #0088cc;
+    color: white;
+}
+
+.btn-telegram:hover {
+    background: #0077b3;
+}
+
+.btn-pdf {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-pdf:hover {
+    background: #c0392b;
+}
+

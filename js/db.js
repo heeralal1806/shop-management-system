@@ -404,7 +404,7 @@ async function getAllSales() {
 }
 
 async function getTodaySales() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local timezone
     return getSalesByDate(today);
 }
 
